@@ -196,6 +196,34 @@ a{color:var(--accent-blue);text-decoration:none}
 .top-students-mini .num{text-align:right}
 @media(max-width:1200px){.anatomy-grid{grid-template-columns:1fr}}
 
+/* Scenarios section */
+.scenario-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.scenario-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;box-shadow:var(--shadow);position:relative;transition:transform 0.2s,box-shadow 0.2s}
+.scenario-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.scenario-card.recommended{border:2px solid var(--accent-emerald)}
+.scenario-badge{position:absolute;top:12px;right:12px;background:var(--accent-emerald);color:#fff;font-size:0.65rem;font-weight:700;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:0.06em}
+.scenario-card h4{font-size:0.95rem;font-weight:700;margin-bottom:4px;color:var(--text-primary)}
+.scenario-card .sc-desc{font-size:0.78rem;color:var(--text-secondary);margin-bottom:16px;line-height:1.5}
+.scenario-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sc-metric{background:var(--bg-tertiary);border-radius:8px;padding:12px;text-align:center}
+.sc-metric .smv{font-size:1.1rem;font-weight:800;font-variant-numeric:tabular-nums}
+.sc-metric .sml{font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px}
+.attrition-box{background:linear-gradient(135deg,#fef2f2,#fff7ed);border:1px solid #fed7aa;border-radius:12px;padding:24px;box-shadow:var(--shadow)}
+.attrition-box h4{font-size:0.95rem;font-weight:700;color:#9a3412;margin-bottom:6px}
+.attrition-box .ab-desc{font-size:0.78rem;color:#c2410c;margin-bottom:16px;line-height:1.5}
+.attrition-row{display:flex;justify-content:space-between;padding:8px 0;font-size:0.82rem;border-bottom:1px solid rgba(0,0,0,0.06)}
+.attrition-row:last-child{border-bottom:none}
+.attrition-row .ar-label{color:var(--text-secondary)}
+.attrition-row .ar-val{font-weight:700;font-variant-numeric:tabular-nums}
+.rec-panel{background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1px solid #bbf7d0;border-radius:12px;padding:28px 32px;box-shadow:var(--shadow);margin-top:20px;border-left:4px solid var(--accent-emerald)}
+.rec-panel h3{font-size:1rem;font-weight:700;color:#166534;margin-bottom:14px}
+.rec-panel ol{padding-left:20px}
+.rec-panel li{padding:8px 0;font-size:0.85rem;color:var(--text-secondary);border-bottom:1px solid rgba(0,0,0,0.05);line-height:1.6}
+.rec-panel li:last-child{border-bottom:none}
+.rec-panel .rec-highlight{color:#166534;font-weight:700}
+.rec-panel .rec-warn{color:var(--accent-red);font-weight:700}
+@media(max-width:1200px){.scenario-grid{grid-template-columns:1fr}}
+
 @media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.chart-grid-2,.chart-grid-2-1,.chart-grid-3{grid-template-columns:1fr}.compare-grid{grid-template-columns:1fr}.spotlight .spot-grid{grid-template-columns:repeat(2,1fr)}.mitigation-results{grid-template-columns:1fr}}
 @media(max-width:768px){.kpi-grid{grid-template-columns:1fr}.container{padding:0 12px}.header h1{font-size:1.4rem}.filters-bar{flex-direction:column}.spotlight .spot-grid{grid-template-columns:1fr}}
 
@@ -217,9 +245,8 @@ a{color:var(--accent-blue);text-decoration:none}
 <div class="nav-inner">
 <button class="nav-btn active" onclick="scrollToSection('overview')">Overview</button>
 <button class="nav-btn" onclick="scrollToSection('profile')">Impact Profile</button>
-<button class="nav-btn" onclick="scrollToSection('revenue')">Revenue</button>
-<button class="nav-btn" onclick="scrollToSection('fa-impact')">FA Impact</button>
-<button class="nav-btn" onclick="scrollToSection('breakdown')">Breakdown</button>
+<button class="nav-btn" onclick="scrollToSection('scenarios')">Scenarios</button>
+<button class="nav-btn" onclick="scrollToSection('deep-dives')">Detailed Analysis</button>
 <button class="nav-btn" onclick="scrollToSection('pricing')">Pricing</button>
 <button class="nav-btn" onclick="scrollToSection('students')">Student Lookup</button>
 </div>
@@ -258,31 +285,32 @@ a{color:var(--accent-blue);text-decoration:none}
 </div>
 </div>
 <div class="spotlight" id="zeroFASpotlight"></div>
-<div class="chart-box" style="margin-top:20px" id="anatomySection"></div>
-<div class="chart-box" style="margin-top:20px">
+</div>
+</div>
+
+<!-- SECTION: MITIGATION SCENARIOS -->
+<div class="section" id="scenarios">
+<div class="container">
+<div class="section-title">Mitigation Scenarios & Attrition Risk</div>
+<div class="section-subtitle">Modeling strategies to reduce student attrition while preserving revenue gains</div>
+<div id="scenariosContent"></div>
+</div>
+</div>
+
+<!-- SECTION: DETAILED ANALYSIS -->
+<div class="section" id="deep-dives" style="background:var(--bg-secondary)">
+<div class="container">
+<div class="section-title">Detailed Analysis</div>
+<div class="section-subtitle">Supporting data &mdash; revenue breakdowns, FA patterns, distribution, and anatomy of extreme cases</div>
+<div class="chart-box" style="margin-bottom:20px" id="anatomySection"></div>
+<div class="chart-box" style="margin-bottom:20px">
 <h3>Top 15 Most Impacted Majors</h3>
 <p class="chart-desc">Academic programs with the highest average per-student tuition increase (minimum 20 students)</p>
 <div style="overflow-x:auto"><table class="majors-table" id="majorsTable"></table></div>
 </div>
-</div>
-</div>
-
-<!-- SECTION: REVENUE COMPARISON -->
-<div class="section" id="revenue" style="background:var(--bg-secondary)">
-<div class="container">
-<div class="section-title">Total Revenue Comparison</div>
-<div class="section-subtitle">Current tuition vs. full USD collection with FA applied &mdash; by school</div>
-<div class="chart-box"><h3>Revenue by School: Current vs. New</h3><div class="chart-wrap h400"><canvas id="chartSchoolRev"></canvas></div></div>
-</div>
-</div>
-
-<!-- SECTION: FA IMPACT -->
-<div class="section" id="fa-impact">
-<div class="container">
-<div class="section-title">Impact by Financial Aid Percentage</div>
-<div class="section-subtitle">How the transition affects students grouped by their Financial Aid tier</div>
+<div class="chart-box" style="margin-bottom:20px"><h3>Revenue by School: Current vs. New</h3><div class="chart-wrap h400"><canvas id="chartSchoolRev"></canvas></div></div>
 <div class="chart-box" style="margin-bottom:20px"><h3>Average Impact per Student by FA%</h3><p class="chart-desc">Bar = average dollar difference per student | Line = average percentage change in total CUSD</p><div class="chart-wrap h350"><canvas id="chartFAImpact"></canvas></div></div>
-<div class="chart-box">
+<div class="chart-box" style="margin-bottom:20px">
 <h3>Detailed Heatmap: FA% x School x Level</h3>
 <p class="chart-desc">Average impact per student broken down by every FA tier and school/level combination. Darker red = higher impact.</p>
 <div class="toggle-group">
@@ -291,14 +319,6 @@ a{color:var(--accent-blue);text-decoration:none}
 </div>
 <div class="heatmap-container" id="heatmapContainer"></div>
 </div>
-</div>
-</div>
-
-<!-- SECTION: BREAKDOWN (Distribution + Campus) -->
-<div class="section" id="breakdown" style="background:var(--bg-secondary)">
-<div class="container">
-<div class="section-title">Impact Breakdown</div>
-<div class="section-subtitle">Distribution of individual student impact and campus-level comparison</div>
 <div class="chart-grid chart-grid-2">
 <div class="chart-box"><h3>Distribution of Student Dollar Impact</h3><p class="chart-desc">Number of students in each impact bracket</p><div class="chart-wrap h350"><canvas id="chartHistogram"></canvas></div></div>
 <div class="chart-box"><h3>Revenue by Campus: Current vs. New</h3><div class="chart-wrap h350"><canvas id="chartCampus"></canvas></div></div>
@@ -322,7 +342,7 @@ a{color:var(--accent-blue);text-decoration:none}
 </div>
 
 <!-- SECTION: INDIVIDUAL STUDENTS -->
-<div class="section" id="students">
+<div class="section" id="students" style="background:var(--bg-secondary)">
 <div class="container">
 <div class="section-title">Individual Student Impact</div>
 <div class="section-subtitle">Search, filter, and explore the impact on every individual student</div>
@@ -689,8 +709,8 @@ schoolBreakdown+='<div style="background:rgba(255,255,255,0.7);border-radius:6px
 schoolBreakdown+='</div>';
 
 const el=document.getElementById('zeroFASpotlight');
-el.innerHTML='<h3>High-Risk Group: Students with 0% Financial Aid</h3>'+
-'<div class="spot-sub">These students receive no financial aid and absorb the full pricing differential. They represent the highest-impact group in this transition.</div>'+
+el.innerHTML='<h3>Zero Financial Aid Group (3,402 Students)</h3>'+
+'<div class="spot-sub">These students receive no financial aid and absorb the full pricing differential. Of these, <strong>1,579 face increases above $300</strong> and are classified as high-risk in the Scenarios section below.</div>'+
 '<div class="spot-grid">'+
 '<div class="spot-stat"><div class="sv">'+fmtN(zeroStudents.length)+'</div><div class="sl">Students</div></div>'+
 '<div class="spot-stat"><div class="sv">'+fmtD(avgDiff)+'</div><div class="sl">Avg Increase</div></div>'+
@@ -721,6 +741,114 @@ table.innerHTML=html;
 }
 
 // ========== WHAT-IF SLIDER ==========
+function renderScenarios(){
+const sec=document.getElementById('scenariosContent');
+const s=AGG.summary;
+const affected=DATA.filter(r=>r[C.DIFF]>0.01);
+const highRisk=DATA.filter(r=>r[C.FA]===0&&r[C.DIFF]>=300);
+const highRiskRev=highRisk.reduce((a,r)=>a+r[C.NEW],0);
+const highRiskDiff=highRisk.reduce((a,r)=>a+r[C.DIFF],0);
+
+// Compute 4 FA scenarios for high-risk students only
+const faLevels=[5,10,15,20];
+const faScenarios=faLevels.map(pct=>{
+const factor=(100-pct)/100;
+const cost=highRisk.reduce((a,r)=>a+r[C.NEW]*(pct/100),0);
+const stillUp=highRisk.filter(r=>(r[C.NEW]*factor-r[C.OLD])>0.01);
+const decreases=highRisk.filter(r=>(r[C.NEW]*factor-r[C.OLD])<-0.01);
+const avgInc=stillUp.length>0?stillUp.reduce((a,r)=>a+(r[C.NEW]*factor-r[C.OLD]),0)/stillUp.length:0;
+const maxInc=stillUp.length>0?Math.max(...stillUp.map(r=>r[C.NEW]*factor-r[C.OLD])):0;
+const retained=(s.totalDiff-cost)/s.totalDiff*100;
+return {pct,cost,stillUp:stillUp.length,decreases:decreases.length,avgInc,maxInc,retained};
+});
+
+// Attrition by school
+const hrSchools={};
+highRisk.forEach(r=>{if(!hrSchools[r[C.SCH]])hrSchools[r[C.SCH]]={count:0,rev:0};hrSchools[r[C.SCH]].count++;hrSchools[r[C.SCH]].rev+=r[C.NEW];});
+const modRisk=DATA.filter(r=>r[C.DIFF]>=150&&r[C.DIFF]<300);
+const modRiskRev=modRisk.reduce((a,r)=>a+r[C.NEW],0);
+
+let html='';
+
+// Header: scope
+html+='<div class="attrition-box" style="background:linear-gradient(135deg,#fef2f2,#fff1f2);border-color:#fecaca;margin-bottom:24px"><h4 style="color:#991b1b">Focus Group: '+fmtN(highRisk.length)+' High-Risk Students</h4>';
+html+='<div class="ab-desc" style="color:#b91c1c">Students with 0% financial aid facing increases above $300. These are the most likely to leave. Avg increase: <strong>'+fmtD(highRiskDiff/highRisk.length)+'</strong> | Total revenue from this group: <strong>'+fmtK(highRiskRev)+'</strong></div>';
+html+='<div style="display:flex;flex-wrap:wrap;gap:10px">';
+const hrSorted=Object.entries(hrSchools).sort((a,b)=>b[1].count-a[1].count);
+hrSorted.forEach(([sch,d])=>{
+html+='<div style="background:rgba(255,255,255,0.7);border-radius:6px;padding:8px 12px;border-left:3px solid '+SCHOOL_COLORS[sch]+';flex:1;min-width:130px"><div style="font-size:0.72rem;font-weight:700;color:'+SCHOOL_COLORS[sch]+'">'+sch+'</div><div style="font-size:1rem;font-weight:800;color:#991b1b">'+d.count+'</div><div style="font-size:0.68rem;color:#b91c1c">'+fmtK(d.rev)+' revenue</div></div>';
+});
+html+='</div></div>';
+
+// Part 1: FA scenarios
+html+='<h3 style="font-size:1.05rem;font-weight:700;color:var(--text-primary);margin-bottom:4px">Award FA to These '+fmtN(highRisk.length)+' Students</h3>';
+html+='<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px">Update their FA in the system from 0% to the chosen level. One bulk update before registration opens.</p>';
+
+html+='<div class="scenario-grid">';
+faScenarios.forEach(sc=>{
+const isRec=sc.pct===10;
+html+='<div class="scenario-card'+(isRec?' recommended':'')+'">';
+if(isRec)html+='<span class="scenario-badge">Recommended</span>';
+html+='<h4>Award '+sc.pct+'% FA</h4>';
+html+='<div class="sc-desc">'+(sc.decreases>0?fmtN(sc.decreases)+' of '+fmtN(highRisk.length)+' would pay less than today. ':'All '+fmtN(highRisk.length)+' still pay more than today. ')+(sc.stillUp>0?fmtN(sc.stillUp)+' still see an increase.':'')+'</div>';
+html+='<div class="scenario-metrics">';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-red)">'+fmtK(sc.cost)+'</div><div class="sml">Revenue Cost</div></div>';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-emerald)">'+fmtD(sc.avgInc)+'</div><div class="sml">'+(sc.stillUp>0?'Avg Remaining Increase':'Avg Decrease')+'</div></div>';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-blue)">'+sc.retained.toFixed(0)+'%</div><div class="sml">Revenue Gain Retained</div></div>';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-gold)">'+fmtD(sc.maxInc)+'</div><div class="sml">Max Remaining Increase</div></div>';
+html+='</div></div>';
+});
+html+='</div>';
+
+// Chart
+html+='<div class="chart-box" style="margin-top:20px"><h3>FA Level Comparison for '+fmtN(highRisk.length)+' High-Risk Students</h3><p class="chart-desc">Revenue cost to the university vs. maximum remaining per-student increase at each FA level</p><div class="chart-wrap h300"><canvas id="chartFAScenarios"></canvas></div></div>';
+
+// Attrition + business case
+html+='<div class="chart-grid chart-grid-2" style="margin-top:20px">';
+
+html+='<div class="attrition-box"><h4>Attrition Risk: What If We Do Nothing?</h4>';
+html+='<div class="ab-desc">Without mitigation, these '+fmtN(highRisk.length)+' students face an average increase of '+fmtD(highRiskDiff/highRisk.length)+'. Here is what attrition would cost.</div>';
+html+='<div class="attrition-row"><span class="ar-label">High-risk students</span><span class="ar-val" style="color:var(--accent-red)">'+fmtN(highRisk.length)+'</span></div>';
+html+='<div class="attrition-row"><span class="ar-label">Their total new revenue</span><span class="ar-val">'+fmtK(highRiskRev)+'</span></div>';
+html+='<div class="attrition-row"><span class="ar-label">If 10% leave &mdash; revenue lost</span><span class="ar-val" style="color:var(--accent-red)">'+fmtK(highRiskRev*0.10)+'</span></div>';
+html+='<div class="attrition-row"><span class="ar-label">If 20% leave &mdash; revenue lost</span><span class="ar-val" style="color:var(--accent-red)">'+fmtK(highRiskRev*0.20)+'</span></div>';
+html+='<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,0.08)">';
+html+='<div style="font-size:0.75rem;font-weight:600;color:#9a3412;margin-bottom:6px">Moderate risk: $150-$300 increase</div>';
+html+='<div class="attrition-row"><span class="ar-label">Students in this range</span><span class="ar-val">'+fmtN(modRisk.length)+'</span></div>';
+html+='<div class="attrition-row"><span class="ar-label">Their total revenue</span><span class="ar-val">'+fmtK(modRiskRev)+'</span></div>';
+html+='</div></div>';
+
+const rec=faScenarios.find(x=>x.pct===10);
+const breakeven=rec.cost/highRiskRev*100;
+html+='<div class="attrition-box" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:#fde68a"><h4 style="color:#92400e">The Business Case for 10% FA</h4>';
+html+='<div class="ab-desc" style="color:#b45309">Awarding 10% FA to the '+fmtN(highRisk.length)+' high-risk students costs '+fmtK(rec.cost)+'. Compare that to the revenue lost from attrition.</div>';
+html+='<div class="attrition-row"><span class="ar-label">Cost of 10% FA for high-risk group</span><span class="ar-val" style="color:var(--accent-blue)">'+fmtK(rec.cost)+'</span></div>';
+html+='<div class="attrition-row"><span class="ar-label">Revenue at risk</span><span class="ar-val">'+fmtK(highRiskRev)+'</span></div>';
+html+='<div class="attrition-row"><span class="ar-label">Break-even attrition rate</span><span class="ar-val" style="color:var(--accent-emerald)">'+breakeven.toFixed(1)+'%</span></div>';
+html+='<div style="background:rgba(255,255,255,0.6);border-radius:8px;padding:12px;margin-top:12px;font-size:0.8rem;color:#92400e;line-height:1.6">If more than <strong>'+breakeven.toFixed(0)+'%</strong> of these '+fmtN(highRisk.length)+' students leave, the university loses <strong>more revenue</strong> than the 10% FA costs. At just '+fmtK(rec.cost)+', this is a low-cost insurance policy against attrition.</div>';
+html+='</div>';
+
+html+='</div>';
+
+// Recommendations
+html+='<div class="rec-panel"><h3>Recommendations</h3><ol>';
+html+='<li><span class="rec-highlight">Award 10% FA to the '+fmtN(highRisk.length)+' high-risk students</span> (0% FA, >$300 increase). One bulk FA update in the system before registration opens. Cost: '+fmtK(rec.cost)+' &mdash; retains '+rec.retained.toFixed(0)+'% of total revenue gain. Brings their average increase from '+fmtD(highRiskDiff/highRisk.length)+' down to '+fmtD(rec.avgInc)+'.</li>';
+html+='<li><span class="rec-highlight">If 10% is insufficient, consider 15% FA</span> which brings the max individual increase down to '+fmtD(faScenarios[2].maxInc)+' and the average to '+fmtD(faScenarios[2].avgInc)+', while still retaining '+faScenarios[2].retained.toFixed(0)+'% of total revenue gains.</li>';
+html+='<li><span class="rec-highlight">Avoid 20% FA for this group</span> unless necessary &mdash; '+fmtN(faScenarios[3].decreases)+' of '+fmtN(highRisk.length)+' would <span class="rec-warn">pay less than today</span>, which over-corrects and is hard to justify.</li>';
+html+='<li><span class="rec-highlight">Communicate proactively.</span> Send targeted emails to these '+fmtN(highRisk.length)+' students before registration explaining the change and the FA adjustment they received. Students who understand the reason are far less likely to leave.</li>';
+html+='<li><span class="rec-highlight">Monitor attrition early in registration</span> for SoEN graduate and SoAS/SoBU students in this group. Have deferred payment plans ready for students who contact financial services.</li>';
+html+='</ol></div>';
+
+sec.innerHTML=html;
+
+// Chart
+const ctx=document.getElementById('chartFAScenarios');
+new Chart(ctx,{type:'bar',data:{labels:faLevels.map(p=>p+'% FA'),datasets:[
+{label:'Revenue Cost',data:faScenarios.map(sc=>sc.cost),backgroundColor:faScenarios.map((_,i)=>i===1?'rgba(5,150,105,0.65)':'rgba(220,38,38,0.55)'),borderRadius:4,yAxisID:'y'},
+{label:'Max Remaining Increase',data:faScenarios.map(sc=>sc.maxInc),type:'line',borderColor:'#d97706',backgroundColor:'#d97706',pointRadius:6,pointBackgroundColor:faScenarios.map((_,i)=>i===1?'#059669':'#d97706'),pointBorderColor:faScenarios.map((_,i)=>i===1?'#059669':'#d97706'),borderWidth:2,yAxisID:'y1',tension:0.3}
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{datalabels:{display:false},tooltip:{callbacks:{label:ctx2=>ctx2.datasetIndex===0?'Cost: '+fmtK(ctx2.raw):'Max increase: '+fmtD(ctx2.raw)}}},scales:{y:{beginAtZero:true,position:'left',title:{display:true,text:'Revenue Cost',color:'#dc2626'},ticks:{callback:v=>fmtK(v)}},y1:{beginAtZero:true,position:'right',grid:{display:false},title:{display:true,text:'Max Remaining Increase',color:'#d97706'},ticks:{callback:v=>'$'+v.toFixed(0)}},x:{ticks:{font:{size:12,weight:'bold'}}}}}});
+}
+
 function renderAnatomy(){
 const sec=document.getElementById('anatomySection');
 // Find top 10 most impacted students
@@ -819,7 +947,7 @@ document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
 event.target.classList.add('active');
 }
 
-const sections=['overview','profile','revenue','fa-impact','breakdown','pricing','students'];
+const sections=['overview','profile','scenarios','deep-dives','pricing','students'];
 window.addEventListener('scroll',()=>{
 const scrollPos=window.scrollY+120;
 sections.forEach((id,i)=>{const el=document.getElementById(id);if(el&&el.offsetTop<=scrollPos&&el.offsetTop+el.offsetHeight>scrollPos){document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.nav-btn')[i].classList.add('active');}});
@@ -827,7 +955,7 @@ sections.forEach((id,i)=>{const el=document.getElementById(id);if(el&&el.offsetT
 
 function init(){
 renderKPIs();renderNarrative();renderRiskTiers();renderGradVsUG();renderZeroFASpotlight();renderAnatomy();renderTopMajors();
-renderRevenueCharts();renderFACharts();renderHeatmap();renderDistribution();renderCampus();renderPricing();
+renderRevenueCharts();renderFACharts();renderHeatmap();renderDistribution();renderCampus();renderScenarios();renderPricing();
 
 const schoolSel=document.getElementById('filterSchool');
 SCHOOLS_ORDER.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s+' - '+SCHOOL_NAMES[s];schoolSel.appendChild(o);});
