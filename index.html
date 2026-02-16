@@ -400,7 +400,7 @@ const CAMPUS_ORDER = ['Beirut','Tripoli','Saida','Tyre','Nabatieh','Akkar','Moun
 
 function fmt(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}
 function fmtD(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function fmtK(n){return n>=1000000?'$'+(n/1000000).toFixed(2)+'M':n>=1000?'$'+(n/1000).toFixed(0)+'K':'$'+n.toFixed(0)}
+function fmtK(n){if(n<0)return '-'+fmtK(-n);return n>=1000000?'$'+(n/1000000).toFixed(2)+'M':n>=1000?'$'+(n/1000).toFixed(0)+'K':'$'+n.toFixed(0)}
 function fmtM(n){return '$'+(n/1000000).toFixed(2)+'M'}
 function fmtP(n){return n.toFixed(2)+'%'}
 function fmtN(n){return n.toLocaleString('en-US')}
@@ -772,7 +772,7 @@ let html='';
 
 // Header: scope
 html+='<div class="attrition-box" style="background:linear-gradient(135deg,#fef2f2,#fff1f2);border-color:#fecaca;margin-bottom:24px"><h4 style="color:#991b1b">Focus Group: '+fmtN(highRisk.length)+' High-Risk Students</h4>';
-html+='<div class="ab-desc" style="color:#b91c1c">Students with 0% financial aid facing increases above $300. These are the most likely to leave. Avg increase: <strong>'+fmtD(highRiskDiff/highRisk.length)+'</strong> | Total revenue from this group: <strong>'+fmtK(highRiskRev)+'</strong></div>';
+html+='<div class="ab-desc" style="color:#b91c1c">Students with 0% financial aid facing increases above $300. These are the most likely to leave. Avg increase: <strong>'+fmtD(highRiskDiff/highRisk.length)+'</strong> | Total new tuition: <strong>'+fmtK(highRiskRev)+'</strong> | Revenue increase: <strong>'+fmtK(highRiskDiff)+'</strong></div>';
 html+='<div style="display:flex;flex-wrap:wrap;gap:10px">';
 const hrSorted=Object.entries(hrSchools).sort((a,b)=>b[1].count-a[1].count);
 hrSorted.forEach(([sch,d])=>{
@@ -781,24 +781,55 @@ html+='<div style="background:rgba(255,255,255,0.7);border-radius:6px;padding:8p
 html+='</div></div>';
 
 // Part 1: FA scenarios
+const origAvg=highRiskDiff/highRisk.length;
 html+='<h3 style="font-size:1.05rem;font-weight:700;color:var(--text-primary);margin-bottom:4px">Award FA to These '+fmtN(highRisk.length)+' Students</h3>';
 html+='<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px">Update their FA in the system from 0% to the chosen level. One bulk update before registration opens.</p>';
 
 html+='<div class="scenario-grid">';
 faScenarios.forEach(sc=>{
 const isRec=sc.pct===10;
+const reduction=((origAvg-sc.avgInc)/origAvg*100).toFixed(0);
 html+='<div class="scenario-card'+(isRec?' recommended':'')+'">';
 if(isRec)html+='<span class="scenario-badge">Recommended</span>';
 html+='<h4>Award '+sc.pct+'% FA</h4>';
-html+='<div class="sc-desc">'+(sc.decreases>0?fmtN(sc.decreases)+' of '+fmtN(highRisk.length)+' would pay less than today. ':'All '+fmtN(highRisk.length)+' still pay more than today. ')+(sc.stillUp>0?fmtN(sc.stillUp)+' still see an increase.':'')+'</div>';
-html+='<div class="scenario-metrics">';
-html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-red)">'+fmtK(sc.cost)+'</div><div class="sml">Revenue Cost</div></div>';
-html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-emerald)">'+fmtD(sc.avgInc)+'</div><div class="sml">'+(sc.stillUp>0?'Avg Remaining Increase':'Avg Decrease')+'</div></div>';
-html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-blue)">'+sc.retained.toFixed(0)+'%</div><div class="sml">Revenue Gain Retained</div></div>';
+html+='<div class="sc-desc">'+(sc.decreases>0?fmtN(sc.decreases)+' of '+fmtN(highRisk.length)+' would pay less than today &mdash; over-corrects the transition.':'Reduces avg increase by '+reduction+'%, from '+fmtD(origAvg)+' down to '+fmtD(sc.avgInc)+'.')+'</div>';
+html+='<div class="scenario-metrics" style="grid-template-columns:1fr 1fr 1fr">';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-blue)">'+fmtK(highRiskDiff)+'</div><div class="sml">Gross Revenue Gain</div></div>';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-red)">'+fmtK(sc.cost)+'</div><div class="sml">FA Cost</div></div>';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-emerald)">'+fmtK(highRiskDiff-sc.cost)+'</div><div class="sml">Net After FA</div></div>';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-gold)">'+fmtD(sc.avgInc)+'</div><div class="sml">Avg Remaining Increase</div></div>';
 html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-gold)">'+fmtD(sc.maxInc)+'</div><div class="sml">Max Remaining Increase</div></div>';
+html+='<div class="sc-metric"><div class="smv">'+sc.retained.toFixed(0)+'%</div><div class="sml">Overall Gain Retained</div></div>';
 html+='</div></div>';
 });
 html+='</div>';
+
+// Graduated FA scenario
+const gradTiers=[{min:300,max:500,fa:6,label:'$300 &ndash; $500'},{min:500,max:700,fa:12,label:'$500 &ndash; $700'},{min:700,max:99999,fa:18,label:'$700+'}];
+let gradCost=0,gradStillUp=0,gradDecreases=0,gradMaxInc=0,gradSumInc=0;
+const tierData=gradTiers.map(()=>({count:0,cost:0}));
+highRisk.forEach(r=>{for(let i=gradTiers.length-1;i>=0;i--){if(r[C.DIFF]>=gradTiers[i].min){const faPct=gradTiers[i].fa;const factor=(100-faPct)/100;const newAmt=r[C.NEW]*factor;const diff=newAmt-r[C.OLD];const cost=r[C.NEW]*(faPct/100);gradCost+=cost;tierData[i].count++;tierData[i].cost+=cost;if(diff>0.01){gradStillUp++;gradSumInc+=diff;if(diff>gradMaxInc)gradMaxInc=diff;}else{gradDecreases++;}break;}}});
+const gradAvgInc=gradStillUp>0?gradSumInc/gradStillUp:0;
+const gradRetained=(s.totalDiff-gradCost)/s.totalDiff*100;
+const gradReduction=((origAvg-gradAvgInc)/origAvg*100).toFixed(0);
+
+html+='<h3 style="font-size:1.05rem;font-weight:700;color:var(--text-primary);margin-top:28px;margin-bottom:4px">Alternative: Targeted FA by Impact Level</h3>';
+html+='<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:16px">Instead of one flat FA rate, give more aid to students with larger increases. <strong>Adjust the percentages below</strong> to see results update instantly.</p>';
+html+='<div class="scenario-card" style="border:2px solid var(--accent-blue)">';
+html+='<span class="scenario-badge" style="background:var(--accent-blue)">Interactive</span>';
+html+='<h4>Graduated FA by Impact</h4>';
+html+='<div class="sc-desc" id="gradDesc">Reduces avg increase by '+gradReduction+'%, from '+fmtD(origAvg)+' down to '+fmtD(gradAvgInc)+'. Prioritizes aid for the most affected students.</div>';
+html+='<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">';
+gradTiers.forEach((t,i)=>{html+='<div style="flex:1;min-width:140px;background:var(--bg-tertiary);border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent-blue)"><div style="font-size:0.7rem;font-weight:700;color:var(--accent-blue)">'+t.label+' increase</div><div style="display:flex;align-items:baseline;gap:4px;margin:4px 0"><input type="number" id="gradFA'+i+'" value="'+gradTiers[i].fa+'" min="0" max="100" step="1" oninput="recalcGrad()" style="width:52px;font-size:1.1rem;font-weight:800;color:var(--accent-blue);background:var(--bg-card);border:2px solid var(--border);border-radius:6px;padding:4px 6px;text-align:center;font-family:inherit;outline:none"><span style="font-size:1.1rem;font-weight:800;color:var(--text-primary)">% FA</span></div><div id="gradTierInfo'+i+'" style="font-size:0.68rem;color:var(--text-muted)">'+fmtN(tierData[i].count)+' students &middot; '+fmtK(tierData[i].cost)+' cost</div></div>';});
+html+='</div>';
+html+='<div class="scenario-metrics" style="grid-template-columns:1fr 1fr 1fr">';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-blue)" id="gradAddRev">'+fmtK(highRiskDiff)+'</div><div class="sml">Gross Revenue Gain</div></div>';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-red)" id="gradFACost">'+fmtK(gradCost)+'</div><div class="sml">FA Cost</div></div>';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-emerald)" id="gradNet">'+fmtK(highRiskDiff-gradCost)+'</div><div class="sml">Net After FA</div></div>';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-gold)" id="gradAvg">'+fmtD(gradAvgInc)+'</div><div class="sml">Avg Remaining Increase</div></div>';
+html+='<div class="sc-metric"><div class="smv" style="color:var(--accent-gold)" id="gradMax">'+fmtD(gradMaxInc)+'</div><div class="sml">Max Remaining Increase</div></div>';
+html+='<div class="sc-metric"><div class="smv" id="gradRetained">'+gradRetained.toFixed(0)+'%</div><div class="sml">Overall Gain Retained</div></div>';
+html+='</div></div>';
 
 // Chart
 html+='<div class="chart-box" style="margin-top:20px"><h3>FA Level Comparison for '+fmtN(highRisk.length)+' High-Risk Students</h3><p class="chart-desc">Revenue cost to the university vs. maximum remaining per-student increase at each FA level</p><div class="chart-wrap h300"><canvas id="chartFAScenarios"></canvas></div></div>';
@@ -832,8 +863,9 @@ html+='</div>';
 
 // Recommendations
 html+='<div class="rec-panel"><h3>Recommendations</h3><ol>';
-html+='<li><span class="rec-highlight">Award 10% FA to the '+fmtN(highRisk.length)+' high-risk students</span> (0% FA, >$300 increase). One bulk FA update in the system before registration opens. Cost: '+fmtK(rec.cost)+' &mdash; retains '+rec.retained.toFixed(0)+'% of total revenue gain. Brings their average increase from '+fmtD(highRiskDiff/highRisk.length)+' down to '+fmtD(rec.avgInc)+'.</li>';
-html+='<li><span class="rec-highlight">If 10% is insufficient, consider 15% FA</span> which brings the max individual increase down to '+fmtD(faScenarios[2].maxInc)+' and the average to '+fmtD(faScenarios[2].avgInc)+', while still retaining '+faScenarios[2].retained.toFixed(0)+'% of total revenue gains.</li>';
+html+='<li><span class="rec-highlight">Use the Targeted FA approach as the primary strategy.</span> Award graduated FA based on impact level: 6% for $300&ndash;$500 increases, 12% for $500&ndash;$700, and 18% for $700+. This costs '+fmtK(gradCost)+' while bringing the average increase from '+fmtD(origAvg)+' down to '+fmtD(gradAvgInc)+'. Use the interactive tool above to fine-tune the percentages.</li>';
+html+='<li style="background:var(--bg-tertiary);border-radius:8px;padding:14px 16px;margin:10px 0;border-left:3px solid var(--accent-blue)"><strong style="color:var(--text-primary);font-size:0.88rem">Why Targeted over Flat 10%?</strong><br><span style="font-size:0.82rem">Both approaches cost roughly the same (<span class="rec-highlight">'+fmtK(gradCost)+'</span> targeted vs <span class="rec-highlight">'+fmtK(rec.cost)+'</span> flat), but targeted FA is more effective: it gives <strong>18% FA to the 153 students facing $700+ increases</strong> &mdash; the ones most likely to leave &mdash; while spending only 6% on the 945 students with smaller $300&ndash;$500 gaps who are less at risk. Flat 10% treats a student with a $993 increase the same as one with a $310 increase. The targeted approach <span class="rec-highlight">reduces the max individual increase from '+fmtD(rec.maxInc)+' (flat 10%) to '+fmtD(gradMaxInc)+'</span>, cutting the worst cases by '+(((rec.maxInc-gradMaxInc)/rec.maxInc)*100).toFixed(0)+'% while keeping similar overall cost.</span></li>';
+html+='<li><span class="rec-highlight">If a flat rate is preferred for administrative simplicity,</span> award 10% FA to all '+fmtN(highRisk.length)+' students. One bulk update, no tiering needed. Cost: '+fmtK(rec.cost)+' &mdash; retains '+rec.retained.toFixed(0)+'% of total revenue gain, avg increase of '+fmtD(rec.avgInc)+'. Simpler to implement but less efficient at retaining the highest-risk students.</li>';
 html+='<li><span class="rec-highlight">Avoid 20% FA for this group</span> unless necessary &mdash; '+fmtN(faScenarios[3].decreases)+' of '+fmtN(highRisk.length)+' would <span class="rec-warn">pay less than today</span>, which over-corrects and is hard to justify.</li>';
 html+='<li><span class="rec-highlight">Communicate proactively.</span> Send targeted emails to these '+fmtN(highRisk.length)+' students before registration explaining the change and the FA adjustment they received. Students who understand the reason are far less likely to leave.</li>';
 html+='<li><span class="rec-highlight">Monitor attrition early in registration</span> for SoEN graduate and SoAS/SoBU students in this group. Have deferred payment plans ready for students who contact financial services.</li>';
@@ -847,6 +879,26 @@ new Chart(ctx,{type:'bar',data:{labels:faLevels.map(p=>p+'% FA'),datasets:[
 {label:'Revenue Cost',data:faScenarios.map(sc=>sc.cost),backgroundColor:faScenarios.map((_,i)=>i===1?'rgba(5,150,105,0.65)':'rgba(220,38,38,0.55)'),borderRadius:4,yAxisID:'y'},
 {label:'Max Remaining Increase',data:faScenarios.map(sc=>sc.maxInc),type:'line',borderColor:'#d97706',backgroundColor:'#d97706',pointRadius:6,pointBackgroundColor:faScenarios.map((_,i)=>i===1?'#059669':'#d97706'),pointBorderColor:faScenarios.map((_,i)=>i===1?'#059669':'#d97706'),borderWidth:2,yAxisID:'y1',tension:0.3}
 ]},options:{responsive:true,maintainAspectRatio:false,plugins:{datalabels:{display:false},tooltip:{callbacks:{label:ctx2=>ctx2.datasetIndex===0?'Cost: '+fmtK(ctx2.raw):'Max increase: '+fmtD(ctx2.raw)}}},scales:{y:{beginAtZero:true,position:'left',title:{display:true,text:'Revenue Cost',color:'#dc2626'},ticks:{callback:v=>fmtK(v)}},y1:{beginAtZero:true,position:'right',grid:{display:false},title:{display:true,text:'Max Remaining Increase',color:'#d97706'},ticks:{callback:v=>'$'+v.toFixed(0)}},x:{ticks:{font:{size:12,weight:'bold'}}}}}});
+
+// Interactive recalc for graduated FA
+window.recalcGrad=function(){
+const tiers=[{min:300,max:500},{min:500,max:700},{min:700,max:99999}];
+const fas=[parseFloat(document.getElementById('gradFA0').value)||0,parseFloat(document.getElementById('gradFA1').value)||0,parseFloat(document.getElementById('gradFA2').value)||0];
+let cost=0,up=0,sumI=0,maxI=0;
+const tc=[{c:0,k:0},{c:0,k:0},{c:0,k:0}];
+highRisk.forEach(r=>{for(let i=2;i>=0;i--){if(r[C.DIFF]>=tiers[i].min){const f=(100-fas[i])/100;const n=r[C.NEW]*f;const d=n-r[C.OLD];const cc=r[C.NEW]*(fas[i]/100);cost+=cc;tc[i].c++;tc[i].k+=cc;if(d>0.01){up++;sumI+=d;if(d>maxI)maxI=d;}break;}}});
+const avg=up>0?sumI/up:0;
+const ret=(s.totalDiff-cost)/s.totalDiff*100;
+const red=origAvg>0?((origAvg-avg)/origAvg*100).toFixed(0):'0';
+document.getElementById('gradDesc').innerHTML='Reduces avg increase by '+red+'%, from '+fmtD(origAvg)+' down to '+fmtD(avg)+'. Prioritizes aid for the most affected students.';
+for(let i=0;i<3;i++){document.getElementById('gradTierInfo'+i).innerHTML=fmtN(tc[i].c)+' students &middot; '+fmtK(tc[i].k)+' cost';}
+document.getElementById('gradAddRev').textContent=fmtK(highRiskDiff);
+document.getElementById('gradFACost').textContent=fmtK(cost);
+document.getElementById('gradNet').textContent=fmtK(highRiskDiff-cost);
+document.getElementById('gradAvg').textContent=fmtD(avg);
+document.getElementById('gradMax').textContent=fmtD(maxI);
+document.getElementById('gradRetained').textContent=ret.toFixed(0)+'%';
+};
 }
 
 function renderAnatomy(){
