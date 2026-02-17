@@ -392,7 +392,7 @@ a{color:var(--accent-blue);text-decoration:none}
 <div class="filter-group"><label>Campus</label><select id="filterCampus"><option value="">All Campuses</option></select></div>
 <div class="filter-group"><label>FA %</label><select id="filterFA"><option value="">All FA%</option></select></div>
 <div class="filter-group"><label>Impact</label><select id="filterImpact"><option value="">Any Impact</option><option value="zero">No Change ($0)</option><option value="low">Low ($0-$50)</option><option value="med">Medium ($50-$150)</option><option value="high">High ($150-$300)</option><option value="vhigh">Very High ($300+)</option></select></div>
-<div class="filter-group"><label>Credit Risk</label><select id="filterCreditRisk"><option value="">Any Credits</option><option value="high">High Risk (&lt;33 cr)</option><option value="med">Medium (33-66 cr)</option><option value="low">Low Risk (67+ cr)</option><option value="acad">Acad. At-Risk (&lt;70% rate)</option></select></div>
+<div class="filter-group"><label>Credit Risk</label><select id="filterCreditRisk"><option value="">Any Risk</option><option value="high">High (&lt;33cr + $250+)</option><option value="med">Medium</option><option value="low">Low (67+cr or &lt;$50)</option><option value="acad">Acad. At-Risk (&lt;70% rate)</option></select></div>
 <div class="filter-group" style="align-self:flex-end"><button class="btn btn-outline" onclick="resetFilters()">Reset</button></div>
 <div class="filter-group" style="align-self:flex-end"><button class="btn btn-primary" onclick="exportCSV()">Export CSV</button></div>
 </div>
@@ -593,7 +593,7 @@ if(level&&r[C.LVL]!==level)return false;
 if(campus&&r[C.CAM]!==campus)return false;
 if(fa&&r[C.FA]!==parseInt(fa))return false;
 if(impact){const d=r[C.DIFF];if(impact==='zero'&&d>=0.01)return false;if(impact==='low'&&(d<0.01||d>=50))return false;if(impact==='med'&&(d<50||d>=150))return false;if(impact==='high'&&(d<150||d>=300))return false;if(impact==='vhigh'&&d<300)return false;}
-if(creditRisk){const comp=r[C.COMP];const att=r[C.ATT];if(creditRisk==='high'&&comp>=33)return false;if(creditRisk==='med'&&(comp<33||comp>=67))return false;if(creditRisk==='low'&&comp<67)return false;if(creditRisk==='acad'&&(att===0||(comp/att*100)>=70))return false;}
+if(creditRisk){const comp=r[C.COMP];const att=r[C.ATT];const diff=r[C.DIFF];if(creditRisk==='high'&&!(comp<33&&diff>=250))return false;if(creditRisk==='med'&&(comp<33&&diff>=250))return false;if(creditRisk==='med'&&(comp>=67||diff<50))return false;if(creditRisk==='low'&&!(comp>=67||diff<50))return false;if(creditRisk==='acad'&&(att===0||(comp/att*100)>=70))return false;}
 return true;
 });
 sortData();currentPage=1;renderTable();
@@ -617,7 +617,7 @@ const tbody=document.getElementById('studentBody');
 tbody.innerHTML=page.map(r=>{
 const pctImpact=maxDiff>0?r[C.DIFF]/maxDiff:0;
 const barColor=pctImpact===0?'#059669':pctImpact<0.3?'#2563eb':pctImpact<0.6?'#d97706':'#dc2626';
-const crBadge=r[C.COMP]<33?'high':r[C.COMP]<67?'med':'low';
+const crBadge=(r[C.COMP]<33&&r[C.DIFF]>=250)?'high':(r[C.COMP]>=67||r[C.DIFF]<50)?'low':'med';
 return '<tr><td>'+r[C.ID]+'</td><td>'+r[C.SCH]+'</td><td>'+(r[C.LVL]==='graduate'?'Graduate':'Undergraduate')+'</td><td>'+r[C.MAJ]+'</td><td>'+r[C.CAM]+'</td><td class="num">'+r[C.FA]+'%</td><td class="num">'+r[C.ATT]+'</td><td class="num"><span class="credit-badge '+crBadge+'">'+r[C.COMP]+'</span></td><td class="num">'+fmtD(r[C.OLD])+'</td><td class="num">'+fmtD(r[C.NEW])+'</td><td class="num" style="color:'+(r[C.DIFF]>0?'var(--accent-gold)':'var(--accent-emerald)')+'">'+(r[C.DIFF]>0?'+':'')+'$'+r[C.DIFF].toFixed(2)+'<div class="impact-bar" style="width:'+pctImpact*100+'%;background:'+barColor+'"></div></td><td class="num">'+r[C.PCT].toFixed(2)+'%</td></tr>';
 }).join('');
 
@@ -1034,16 +1034,20 @@ sec.innerHTML=html;
 function renderCreditRisk(){
 const sec=document.getElementById('creditRiskContent');
 
-// Define credit tiers
+// Define compound credit-risk tiers (credits + tuition impact)
 const tiers=[
-{label:'High Risk (< 33 credits)',key:'high',min:0,max:33,color:'#dc2626',desc:'Early-stage students most vulnerable to dropout'},
-{label:'Medium Risk (33–66 credits)',key:'med',min:33,max:67,color:'#d97706',desc:'Mid-program students with moderate completion'},
-{label:'Low Risk (67+ credits)',key:'low',min:67,max:99999,color:'#059669',desc:'Near-completion students likely to persist'}
+{label:'High Risk',key:'high',color:'#dc2626',desc:'< 33 credits completed AND $250+ tuition increase — early-stage students facing the steepest hikes'},
+{label:'Medium Risk',key:'med',color:'#d97706',desc:'Everyone between high and low — includes early students with moderate increases and mid-program students with significant increases'},
+{label:'Low Risk',key:'low',color:'#059669',desc:'67+ completed credits OR tuition increase under $50 — near graduation or minimally affected'}
 ];
 
-// Classify students
-const tierStudents=tiers.map(()=>[]);
-DATA.forEach(r=>{const comp=r[C.COMP];for(let i=0;i<tiers.length;i++){if(comp>=tiers[i].min&&comp<tiers[i].max){tierStudents[i].push(r);break;}}});
+// Classify students: high first, low second, medium is catch-all
+const tierStudents=[[], [], []];
+DATA.forEach(r=>{
+if(r[C.COMP]<33&&r[C.DIFF]>=250){tierStudents[0].push(r);}
+else if(r[C.COMP]>=67||r[C.DIFF]<50){tierStudents[2].push(r);}
+else{tierStudents[1].push(r);}
+});
 
 // Tier KPI cards
 let html='<div class="credit-tier-grid">';
@@ -1053,9 +1057,8 @@ const count=sts.length;
 const pct=(count/DATA.length*100).toFixed(1);
 const avgDiff=count>0?sts.reduce((s,r)=>s+r[C.DIFF],0)/count:0;
 const avgComp=count>0?sts.reduce((s,r)=>s+r[C.COMP],0)/count:0;
-const affected=sts.filter(r=>r[C.DIFF]>0.01).length;
-const affPct=count>0?(affected/count*100).toFixed(0):'0';
-const highImpact=sts.filter(r=>r[C.DIFF]>=150).length;
+const totalRev=sts.reduce((s,r)=>s+r[C.NEW],0);
+const zeroFA=sts.filter(r=>r[C.FA]===0).length;
 html+='<div class="credit-tier-card '+t.key+'-risk">';
 html+='<div class="ct-label" style="color:'+t.color+'">'+t.label+'</div>';
 html+='<div class="ct-value" style="color:'+t.color+'">'+fmtN(count)+' <span style="font-size:0.9rem;font-weight:600;color:var(--text-muted)">('+pct+'%)</span></div>';
@@ -1063,8 +1066,8 @@ html+='<div class="ct-sub">'+t.desc+'</div>';
 html+='<div class="ct-detail">';
 html+='Avg completed: <strong>'+avgComp.toFixed(0)+' cr</strong> &middot; ';
 html+='Avg tuition increase: <strong>'+fmtD(avgDiff)+'</strong><br>';
-html+='Affected by increase: <strong>'+fmtN(affected)+' ('+affPct+'%)</strong> &middot; ';
-html+='High impact ($150+): <strong style="color:'+t.color+'">'+fmtN(highImpact)+'</strong>';
+html+='Revenue at stake: <strong>'+fmtK(totalRev)+'</strong> &middot; ';
+html+='With 0% FA: <strong style="color:'+t.color+'">'+fmtN(zeroFA)+'</strong>';
 html+='</div></div>';
 });
 html+='</div>';
@@ -1073,8 +1076,8 @@ html+='</div>';
 html+='<div class="chart-grid chart-grid-2" style="margin-bottom:20px">';
 
 // Donut
-html+='<div class="chart-box"><h3>Credit Completion Risk Distribution</h3>';
-html+='<p class="chart-desc">All '+fmtN(DATA.length)+' students classified by completed credits into dropout risk tiers</p>';
+html+='<div class="chart-box"><h3>Compound Risk Distribution</h3>';
+html+='<p class="chart-desc">All '+fmtN(DATA.length)+' students classified by completed credits AND tuition impact into dropout risk tiers</p>';
 html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center">';
 html+='<div class="chart-wrap" style="height:260px"><canvas id="chartCreditDonut"></canvas></div>';
 html+='<div class="tier-legend" id="creditTierLegend"></div>';
@@ -1121,19 +1124,19 @@ html+='</tbody></table></div></div>';
 
 // Scatter plot
 html+='<div class="chart-box"><h3>Completed Credits vs. Tuition Increase</h3>';
-html+='<p class="chart-desc">Each dot is a student. Bottom-right = high risk (few credits, large increase). Colored by school.</p>';
+html+='<p class="chart-desc">Each dot is a student. Top-left quadrant (< 33 credits, $250+ increase) = high risk. Colored by school.</p>';
 html+='<div class="chart-wrap h350"><canvas id="chartCreditScatter"></canvas></div>';
 html+='</div>';
 html+='</div>';
 
-// Double-jeopardy spotlight
-const doubleJeopardy=DATA.filter(r=>r[C.COMP]<33&&r[C.DIFF]>=150).sort((a,b)=>b[C.DIFF]-a[C.DIFF]);
+// High-risk spotlight (same as tier 0 — the compound high-risk group)
+const doubleJeopardy=tierStudents[0].slice().sort((a,b)=>b[C.DIFF]-a[C.DIFF]);
 const djTotalRev=doubleJeopardy.reduce((s,r)=>s+r[C.NEW],0);
 const djAvgDiff=doubleJeopardy.length>0?doubleJeopardy.reduce((s,r)=>s+r[C.DIFF],0)/doubleJeopardy.length:0;
 
 html+='<div class="spotlight" style="background:linear-gradient(135deg,#fef2f2,#fff1f2);border-color:#fecaca;margin-bottom:20px">';
-html+='<h3 style="color:#991b1b">Double Jeopardy: Low Credits + High Tuition Impact</h3>';
-html+='<div class="spot-sub" style="color:#b91c1c">Students with fewer than 33 completed credits facing tuition increases of $150+. These are the <strong>highest priority for additional financial aid</strong> — early in their studies and hit hardest by the pricing change.</div>';
+html+='<h3 style="color:#991b1b">High Risk: Low Credits + High Tuition Impact</h3>';
+html+='<div class="spot-sub" style="color:#b91c1c">Students with fewer than 33 completed credits facing tuition increases of $250+. These are the <strong>highest priority for additional financial aid</strong> — early in their studies and hit hardest by the pricing change.</div>';
 html+='<div class="spot-grid">';
 html+='<div class="spot-stat"><div class="sv">'+fmtN(doubleJeopardy.length)+'</div><div class="sl">Students at Risk</div></div>';
 html+='<div class="spot-stat"><div class="sv">'+fmtD(djAvgDiff)+'</div><div class="sl">Avg Increase</div></div>';
@@ -1153,8 +1156,8 @@ html+='</div></div>';
 
 // Actionable table: top 50 double-jeopardy students
 const showList=doubleJeopardy.slice(0,50);
-html+='<div class="chart-box"><h3>Top '+Math.min(50,doubleJeopardy.length)+' Priority Students for FA Intervention</h3>';
-html+='<p class="chart-desc">Students with <33 completed credits and highest tuition increase — sorted by impact. These should be first in line for additional financial aid.</p>';
+html+='<div class="chart-box"><h3>Top '+Math.min(50,doubleJeopardy.length)+' High-Risk Students for FA Intervention</h3>';
+html+='<p class="chart-desc">Students with < 33 completed credits and $250+ tuition increase — sorted by impact. These should be first in line for additional financial aid.</p>';
 html+='<div style="max-height:500px;overflow-y:auto"><table class="at-risk-table"><thead><tr>';
 html+='<th>#</th><th>App ID</th><th>School</th><th>Level</th><th>Major</th><th>Campus</th><th class="num">FA%</th><th class="num">Credits Done</th><th class="num">Credits Att.</th><th class="num">Tuition Increase</th>';
 html+='</tr></thead><tbody>';
@@ -1174,8 +1177,8 @@ html+='<p class="chart-desc">Completion rate = Credits Completed ÷ Credits Atte
 const allRates=withAttempted.map(r=>r[C.COMP]/r[C.ATT]*100);
 const avgRate=allRates.reduce((s,v)=>s+v,0)/allRates.length;
 const below70=withAttempted.filter(r=>(r[C.COMP]/r[C.ATT]*100)<70);
-const below70high=below70.filter(r=>r[C.DIFF]>=150);
-const tripleJ=below70.filter(r=>r[C.COMP]<33&&r[C.DIFF]>=150);
+const below70high=below70.filter(r=>r[C.DIFF]>=250);
+const tripleJ=below70.filter(r=>r[C.COMP]<33&&r[C.DIFF]>=250);
 
 html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">';
 html+='<div style="background:var(--bg-tertiary);border-radius:8px;padding:14px;text-align:center"><div style="font-size:1.4rem;font-weight:800;color:var(--accent-blue)">'+avgRate.toFixed(1)+'%</div><div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:4px">Avg Completion Rate</div></div>';
@@ -1224,11 +1227,11 @@ html+='</div>';
 
 // Recommendations
 html+='<div class="rec-panel"><h3>Credit-Based Risk Recommendations</h3><ol>';
-html+='<li><span class="rec-highlight">Prioritize the '+fmtN(doubleJeopardy.length)+' double-jeopardy students</span> (< 33 credits completed, $150+ increase) for immediate FA top-up. These students are both early in their program and hardest hit, making them the most likely to drop out.</li>';
-html+='<li><span class="rec-highlight">The '+fmtN(tripleJ.length)+' triple-jeopardy students</span> (< 33 credits, < 70% completion rate, $150+ increase) should be the <span class="rec-warn">absolute top priority</span>. They are already struggling academically and a tuition hike will likely push them out.</li>';
-html+='<li><span class="rec-highlight">Students with < 33 completed credits and 0% FA ('+fmtN(doubleJeopardy.filter(r=>r[C.FA]===0).length)+' students)</span> are at extreme risk. Consider awarding them 10–15% FA to bring their increase below $150 and retain them through their early semesters.</li>';
-html+='<li><span class="rec-highlight">Students with 67+ completed credits</span> are near graduation and <span class="rec-highlight">far less likely to leave</span> even with moderate increases. FA resources are better directed toward early-stage students where retention ROI is highest.</li>';
-html+='<li><span class="rec-highlight">'+fmtN(below70high.length)+' students with completion rates below 70% AND $150+ increases</span> should receive proactive outreach from both academic advising and financial services simultaneously.</li>';
+html+='<li><span class="rec-highlight">Prioritize the '+fmtN(doubleJeopardy.length)+' high-risk students</span> (< 33 credits completed AND $250+ increase) for immediate FA top-up. These students are both early in their program and hardest hit, making them the most likely to drop out.</li>';
+html+='<li><span class="rec-highlight">The '+fmtN(tripleJ.length)+' triple-jeopardy students</span> (< 33 credits, < 70% completion rate, $250+ increase) should be the <span class="rec-warn">absolute top priority</span>. They are already struggling academically and a tuition hike will likely push them out.</li>';
+html+='<li><span class="rec-highlight">High-risk students with 0% FA ('+fmtN(doubleJeopardy.filter(r=>r[C.FA]===0).length)+' students)</span> are at extreme risk. Consider awarding them 10–15% FA to bring their increase below $250 and retain them through their early semesters.</li>';
+html+='<li><span class="rec-highlight">Students with 67+ completed credits or minimal tuition increase</span> are low risk — near graduation or unaffected by the change. FA resources are better directed toward high-risk early-stage students where retention ROI is highest.</li>';
+html+='<li><span class="rec-highlight">'+fmtN(below70high.length)+' students with completion rates below 70% AND $250+ increases</span> should receive proactive outreach from both academic advising and financial services simultaneously.</li>';
 html+='</ol></div>';
 
 sec.innerHTML=html;
